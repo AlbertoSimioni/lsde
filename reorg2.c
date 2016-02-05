@@ -94,7 +94,7 @@ void reorg_knows()
         person_buffer[person_offset % PERSON_BUFFER].knows_first = new_first;
         person_buffer[person_offset % PERSON_BUFFER].knows_n = count;
 
-        if((person_offset % PERSON_BUFFER) == 0)
+        if(((person_offset+1) % PERSON_BUFFER) == 0)
         {
             printf("writing person\n");
             fwrite(person_buffer, sizeof(Person), PERSON_BUFFER, new_person);
