@@ -164,14 +164,14 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
                 knows_offset < person->knows_first + person->knows_n;
                 knows_offset++)
         {
-
-            knows = &person_map[knows_map[knows_offset]];
-            //if (person->location != knows->location) continue;
             unsigned int knows_pos = knows_map[knows_offset];
+            knows = &person_map[knows_pos];
+            //if (person->location != knows->location) continue;
             if(location_map[person_offset] != location_map[knows_pos]) continue;
 
             // friend must already like the artist
-            if (!likes_artist(knows, artist)) continue;
+            //if(!likes_artist(knows, artist)) continue;
+            if (scores_map[knows_pos] != -1) continue;
 
             // friendship must be mutual
             for (knows_offset2 = knows->knows_first;
