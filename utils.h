@@ -1,3 +1,5 @@
+#include <time.h>
+
 #define REPORTING_N 1000000
 #define LINEBUFLEN 1024
 
@@ -127,3 +129,9 @@ char* makepath(char* dir, char* file, char* ext) {
 }
 
 
+void timestamp()
+{
+    time_t ltime; /* calendar time */
+    ltime=time(NULL); /* get current cal time */
+    printf("%s",asctime( localtime(&ltime) ) );
+}

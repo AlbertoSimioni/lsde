@@ -21,7 +21,7 @@ Person *person_map;
 unsigned int *knows_map;
 unsigned short *interest_map;
 unsigned short *location_map;
-char *scores_map;
+unsigned char *scores_map;
 
 unsigned long person_length, knows_length, interest_length, location_length, score_length;
 
@@ -120,7 +120,7 @@ void save_scores(unsigned short artist, unsigned short areltd[])
         person = &(person_map[person_offset]);
         if(likes_artist(person, artist))
         {
-            scores_map[person_offset] = -1;
+            scores_map[person_offset] = 4;
         }
         else
         {
@@ -153,11 +153,22 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
         if (person->birthday < bdstart || person->birthday > bdend) continue;
 
         // person must not like artist yet
-        if(scores_map[person_offset] == -1) continue;
+        if(scores_map[person_offset] == 4) continue;
+        //if (likes_artist(person, artist)) continue;
 
         // but person must like some of these other guys
+        //int score1 = get_score(person, areltd);
+        
         score = scores_map[person_offset];
-        if (score < 1) continue;
+        /*
+        if(score != score1){
+            if(score != 4){
+                printf("different scores\n");
+            }else{
+                printf("diversi ma è meno uno\n");
+            }
+        }*/
+        if (score == 0 || score == 4) continue;
 
         // check if friend lives in same city and likes artist
         for (knows_offset = person->knows_first;
@@ -166,12 +177,21 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
         {
             unsigned int knows_pos = knows_map[knows_offset];
             knows = &person_map[knows_pos];
+
+            // int res1=3,res2=0;
+            // res1=(person->location != knows->location);
+            // res2=(location_map[person_offset] != location_map[knows_pos]);
+            // if(res1!=res2)
+            //     printf("diversi\n");
             //if (person->location != knows->location) continue;
             if(location_map[person_offset] != location_map[knows_pos]) continue;
 
-            // friend must already like the artist
-            //if(!likes_artist(knows, artist)) continue;
-            if (scores_map[knows_pos] != -1) continue;
+
+            // if((!likes_artist(knows, artist))  != (scores_map[knows_pos] != 4))
+            //     printf("hehehe\n");
+            // // friend must already like the artist
+            // if(!likes_artist(knows, artist)) continue;
+            if (scores_map[knows_pos] != 4) continue;
 
             // friendship must be mutual
             for (knows_offset2 = knows->knows_first;
