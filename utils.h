@@ -19,6 +19,12 @@ typedef struct {
 	unsigned short interest_n;
 } Person;
 
+typedef struct{
+    unsigned int person_offset;
+    unsigned long knows_first;
+    unsigned short knows_n;
+} Person_buffer;
+
 typedef struct { 
     unsigned long  person_id;
     unsigned long  knows_id;
