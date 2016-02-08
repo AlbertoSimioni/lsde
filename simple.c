@@ -184,7 +184,7 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
             // if(res1!=res2)
             //     printf("diversi\n");
             //if (person->location != knows->location) continue;
-            if(location_map[person_offset] != location_map[knows_pos]) continue;
+            //if(location_map[person_offset] != location_map[knows_pos]) continue;
 
 
             // if((!likes_artist(knows, artist))  != (scores_map[knows_pos] != 4))
@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
     interest_map = (unsigned short *) mmapr(makepath(argv[1], "interest", "bin"), &interest_length);
     knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows",    "bin"), &knows_length);
 
-    save_locations();
+    //save_locations();
 
 
     outfile = fopen(argv[3], "w");

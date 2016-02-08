@@ -66,6 +66,9 @@ void parse_csv(char* fname, void (*line_handler)(unsigned char nfields, char** f
 	fclose(stream);
 }
 
+void print_person(Person *p){
+printf("id: %li\nbirthday: %hi\nlocation: %hi\nknows_first: %li\nknows_n: %hi\n",p->person_id, p->birthday,p->location,p->knows_first, p->knows_n );
+}
 
 FILE* open_binout(char* filename) {
 	FILE* outfile;
