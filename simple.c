@@ -20,10 +20,9 @@
 Person *person_map;
 unsigned int *knows_map;
 unsigned short *interest_map;
-unsigned short *location_map;
 unsigned char *scores_map;
 
-unsigned long person_length, knows_length, interest_length, location_length, score_length;
+unsigned long person_length, knows_length, interest_length, score_length;
 
 FILE *outfile;
 
@@ -94,19 +93,7 @@ char likes_artist(Person *person, unsigned short artist)
 }
 
 
-void save_locations()
-{
-    Person *person;
-    unsigned int person_offset;
 
-    location_map = malloc(sizeof(short) * (person_length / sizeof(Person)));
-
-    for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
-    {
-        person = &(person_map[person_offset]);
-        location_map[person_offset] = person->location;
-    }
-}
 
 void save_scores(unsigned short artist, unsigned short areltd[])
 {
@@ -158,7 +145,7 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
 
         // but person must like some of these other guys
         //int score1 = get_score(person, areltd);
-        
+
         score = scores_map[person_offset];
         /*
         if(score != score1){
@@ -193,14 +180,7 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
             // if(!likes_artist(knows, artist)) continue;
             if (scores_map[knows_pos] != 4) continue;
 
-            // friendship must be mutual
-            for (knows_offset2 = knows->knows_first;
-                    knows_offset2 < knows->knows_first + knows->knows_n;
-                    knows_offset2++)
-            {
 
-                if (knows_map[knows_offset2] == person_offset)
-                {
                     // realloc result array if we run out of space
                     if (result_length >= result_set_size)
                     {
@@ -211,9 +191,7 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
                     results[result_length].knows_id = knows->person_id;
                     results[result_length].score = score;
                     result_length++;
-                    break;
-                }
-            }
+
         }
     }
 
@@ -261,11 +239,10 @@ int main(int argc, char *argv[])
     char *knows_input_file     = makepath(argv[1], "knows",    "csv");
 
     /* memory-map files created by loader */
-    person_map   = (Person *)         mmapr(makepath(argv[1], "person",   "bin"), &person_length);
+    person_map   = (Person *)         mmapr(makepath(argv[1], "person_reduced",   "bin"), &person_length);
     interest_map = (unsigned short *) mmapr(makepath(argv[1], "interest", "bin"), &interest_length);
-    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows",    "bin"), &knows_length);
+    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows_reduced",    "bin"), &knows_length);
 
-    //save_locations();
 
 
     outfile = fopen(argv[3], "w");
