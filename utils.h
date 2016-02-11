@@ -25,7 +25,14 @@ typedef struct{
     unsigned short knows_n;
 } Person_buffer;
 
-typedef struct { 
+typedef struct {
+    unsigned short interest_id;
+    unsigned long  likedBy_first;
+    unsigned char  likedBy_n;
+} Artist;
+
+
+typedef struct {
     unsigned long  person_id;
     unsigned long  knows_id;
     unsigned char  score;
@@ -47,7 +54,7 @@ void parse_csv(char* fname, void (*line_handler)(unsigned char nfields, char** f
 	while (fgets(line, LINEBUFLEN, stream)) {
 		col = 0;
 		// parse the csv line into array of strings
-		for (idx=0; idx<LINEBUFLEN; idx++) { 
+		for (idx=0; idx<LINEBUFLEN; idx++) {
 			if (line[idx] == '|' || line[idx] == '\n') {
 				line[idx] = '\0';
 				col++;
@@ -80,8 +87,8 @@ FILE* open_binout(char* filename) {
 	return outfile;
 }
 
-/* 
-	convert birthday from date to four-digit integer with month and day 
+/*
+	convert birthday from date to four-digit integer with month and day
 	easier comparisions and less storage space
 */
 unsigned short birthday_to_short(char* date) {
@@ -113,7 +120,7 @@ void* mmapopen(char* filename, byteoffset *filelen, bool write) {
         fprintf(stderr, "failed to stat %s\n", filename);
         exit(1);
     }
-    
+
     mapaddr = mmap(0, sbuf.st_size, mmapmode, MAP_SHARED, fd, 0);
     if (mapaddr == MAP_FAILED) {
         fprintf(stderr, "failed to mmap %s\n", filename);

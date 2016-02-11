@@ -12,10 +12,14 @@
 Person *person_map;
 unsigned int *knows_map;
 unsigned int *knows_map_reduced;
+unsigned short *interest_map;
+char* likedBy_output_file;
 char *new_knows_output_file;
 char *new_person_output_file;
+char* artists_output_file;
+char* likedBy_output_file;
 char* path;
-unsigned long person_length, knows_length;
+unsigned long person_length, knows_length, interest_length;
 unsigned long loc_size;
 unsigned short *location_map;
 unsigned short *visited_locations;
@@ -138,7 +142,7 @@ printf("new size person: %li\n", person_length / sizeof(Person));
     }
     fclose(new_person);
     fclose(new_knows);
-    
+
     //TODO clear buffers
     return;
 }
@@ -194,31 +198,115 @@ void reorg_location_mutual()
         }
 
         person_copy.knows_n = count;
-         if(count>0){
+         if(count>0){ //skip writing of a person with no friends
             fwrite(&person_copy, sizeof(Person), 1, new_person);
             offests_buffer[person_offset]=person_count;
             ++person_count;
         }
-        
+
     }
     fclose(new_knows);
     fclose(new_person);
 
-printf("reached: %s\n", new_knows_output_file);
+
+
+    printf("reached: %s\n", new_knows_output_file);
     knows_map_reduced    = (unsigned int *)   mmapr(makepath(path, "knows_reduced_temp",    "bin"), &knows_length);
     new_knows_output_file = makepath(path, "knows_reduced", "bin");
     new_knows = open_binout(new_knows_output_file);
 
     for(knows_offset=0; knows_offset<knows_length/sizeof(int); ++knows_offset)
      {
-        if(knows_offset<100){
-            printf("first offset: %i\nsecond offset: %i\n",knows_map_reduced[knows_offset], offests_buffer[knows_map_reduced[knows_offset]]);
-        }
+
         fwrite(&offests_buffer[knows_map_reduced[knows_offset]], sizeof(int), 1, new_knows);
     }
-    
+
+
     return;
 }
+
+
+void reorg_interests()
+{
+    //CODE FOR CREATING THE likedBy table and to create the new interests table
+    FILE *artists = open_binout(artists_output_file);
+    FILE *likedBy = open_binout(likedBy_output_file);
+    unsigned int interests_buffer_size = 1000;
+    unsigned int interests_count = 0;
+    unsigned int count = 0;
+    unsigned int total_count = 0;
+    unsigned short* interests_buffer  = malloc(sizeof(short) * interests_buffer_size);
+    long interest_offset, interest_buffer_offset;
+    unsigned short current_interest, person_interest;
+    unsigned short found;
+    unsigned int person_offset;
+    Person *person;
+    //Populating the array of different interests
+    for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
+    {
+
+        person = &person_map[person_offset];
+        for (interest_offset = person->interests_first;
+                interest_offset < person->interests_first + person->interest_n;
+                interest_offset++){
+            found = 0;
+            current_interest = interest_map[interest_offset];
+            unsigned int i;
+            for(i = 0; i < interests_count && !found; i++){
+                if(current_interest == interests_buffer[i]){
+                    found = 1;
+                }
+            }
+
+            if(!found)
+                {
+                if(interests_count == interests_buffer_size)
+                    {
+                        printf("doubling size of interests\n");
+                        interests_buffer_size = interests_buffer_size * 2;
+                        interests_buffer = realloc(interests_buffer, interests_buffer_size * sizeof(short));
+                    }
+                interests_buffer[interests_count] = current_interest;
+                interests_count++;
+                }
+            }
+    }
+
+    //for(interest_offset = 0; interest_offset < interests_count; interest_offset++){ printf("%hi\n",interests_buffer[interest_offset] );}
+    printf("%li \n", person_length / sizeof(Person));
+    printf("interests: %i\n",interests_count);
+    //ora scorro tutti gli interessi uno alla volta. Nella nuova interest devo salvare first e count
+    for(interest_buffer_offset = 0; interest_buffer_offset < interests_count; interest_buffer_offset++){
+        printf("%li\n", interest_buffer_offset);
+        current_interest = interests_buffer[interest_buffer_offset];
+        count = 0;
+        Artist artist;
+        artist.interest_id = current_interest;
+        artist.likedBy_first = total_count;
+        for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
+        {
+            person = &person_map[person_offset];
+            for (interest_offset = person->interests_first;
+                interest_offset < person->interests_first + person->interest_n;
+                interest_offset++){
+                person_interest =  interest_map[interest_offset];
+                if(person_interest == current_interest){
+                    count++;
+                    total_count++;
+                    fwrite(&person_offset, sizeof(int), 1, likedBy);
+                }
+            }
+
+        }
+        artist.likedBy_n = count;
+        fwrite(&artist, sizeof(Artist), 1, artists);
+        //SALVATAGGIO DEL SINGOLO NEW INTEREST
+    }
+    fclose(artists);
+    fclose(likedBy);
+    return;
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -234,17 +322,22 @@ int main(int argc, char *argv[])
     person_map   = (Person *)         mmapr(makepath(argv[1], "person",   "bin"), &person_length);
     knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows",    "bin"), &knows_length);
 
-    save_locations();
-    reorg_location(); //delete all friendships from knows file of friends in different cities
-printf("what\n");
+    //save_locations();
+    //reorg_location(); //delete all friendships from knows file of friends in different cities
+    printf("what\n");
     person_map   = (Person *)         mmapr(makepath(argv[1], "new_person",   "bin"), &person_length);
     printf("the fuck\n");
     knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "new_knows",    "bin"), &knows_length);
     new_knows_output_file = makepath(argv[1], "knows_reduced_temp", "bin");
     new_person_output_file = makepath(argv[1], "person_reduced", "bin");
 
-    reorg_location_mutual();
-
+    //reorg_location_mutual();
+    interest_map = (unsigned short *) mmapr(makepath(path, "interest", "bin"), &interest_length);
+    person_map = (Person *)   mmapr(makepath(path, "person_reduced",    "bin"), &person_length);
+    likedBy_output_file = makepath(path, "likedBy", "bin");
+    artists_output_file = makepath(path, "artists", "bin");
+    printf("person_reduced: %li\n", person_length / sizeof(Person));
+    reorg_interests();
 
     return 0;
 }
