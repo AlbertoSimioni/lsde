@@ -28,7 +28,7 @@ typedef struct{
 typedef struct {
     unsigned short interest_id;
     unsigned long  likedBy_first;
-    unsigned char  likedBy_n;
+    unsigned short  likedBy_n;
 } Artist;
 
 

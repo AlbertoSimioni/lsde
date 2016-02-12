@@ -79,18 +79,13 @@ void save_scores_2(unsigned short artist_id, unsigned short areltd[])
     Artist *artist;
 
     scores_map = malloc(sizeof(char) * (person_length / sizeof(Person)));
-printf("4\n");
     bzero(scores_map, sizeof(char) * (person_length / sizeof(Person)));
-printf("5\n");
-    if(scores_map[4]==0){
-        printf("ok\n" );
-    }
-    int found = 0;
 
     for (artist_offset = 0;
-            artist_offset < artists_length / sizeof(Artist) && found < 3;
+            artist_offset < artists_length / sizeof(Artist);
             artist_offset++)
     {
+
         artist = &artists_map[artist_offset];
         if(artist->interest_id == artist_id)
         {
@@ -101,9 +96,8 @@ printf("5\n");
                 scores_map[liked_map[liked_offset]] = 4;
             }
         }
-        if(areltd[0] == artist->interest_id || areltd[1] == artist->interest_id || areltd[3] == artist->interest_id)
+        if(areltd[0] == artist->interest_id || areltd[1] == artist->interest_id || areltd[2] == artist->interest_id)
         {
-            found++;
             for(liked_offset = artist->likedBy_first;
                     liked_offset < artist->likedBy_first + artist->likedBy_n;
                     liked_offset++)
@@ -268,19 +262,62 @@ void query_line_handler(unsigned char nfields, char **tokens)
 printf("here\n");
     //save_scores(q_artist, q_relartists);
     save_scores_2(q_artist, q_relartists);
-
+    /*
     int i=0;
     for(;i<person_length/sizeof(Person);++i){
-        int score = get_score(&person_map[i], q_relartists);
-        if(likesartist(&person_map[i], q_artist))
+        unsigned char score = get_score(&person_map[i], q_relartists);
+        if(likes_artist(&person_map[i], q_artist))
             score=4;
+
         if(score!=scores_map[i]){
-            printf("diversi\n");
+            printf("diversi %u , %u , %li \n",score,scores_map[i],i);
         }
-    }
+    }*/
     query(q_id, q_artist, q_relartists, q_bdaystart, q_bdayend);
 }
 
+
+void test(){
+    long interest_offset;
+    unsigned int person_offset = 185276;
+    Person *person = &person_map[person_offset];
+    int count = 0;
+    int count2 = 0;
+  for (interest_offset = person->interests_first;
+                interest_offset < person->interests_first + person->interest_n;
+                interest_offset++){
+        printf("%hi , ",interest_map[interest_offset] );
+        count++;
+  }
+  printf("size1: %i\n ",count);
+
+  long artist_offset;
+    unsigned int liked_offset;
+    Artist *artist;
+
+
+    for (artist_offset = 0;
+            artist_offset < artists_length / sizeof(Artist);
+            artist_offset++)
+    {
+
+        artist = &artists_map[artist_offset];
+        for(liked_offset = artist->likedBy_first;
+            liked_offset < artist->likedBy_first + artist->likedBy_n;
+                    liked_offset++)
+            {
+
+                if (person_offset == liked_map[liked_offset]){
+                    count2++;
+                    printf("%hi , ", artist->interest_id);
+                }
+            }
+
+    }
+    printf("\n size1: %i\n ",count2);
+
+
+}
 
 
 int main(int argc, char *argv[])
@@ -311,6 +348,7 @@ printf("finish loading\n");
     }
 printf("oh\n");
     /* run through queries */
+    //test();
     parse_csv(argv[2], &query_line_handler);
     return 0;
 }

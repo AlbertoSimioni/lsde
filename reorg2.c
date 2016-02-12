@@ -242,6 +242,7 @@ void reorg_interests()
     unsigned int person_offset;
     Person *person;
     //Populating the array of different interests
+
     for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
     {
 
@@ -277,7 +278,7 @@ void reorg_interests()
     printf("interests: %i\n",interests_count);
     //ora scorro tutti gli interessi uno alla volta. Nella nuova interest devo salvare first e count
     for(interest_buffer_offset = 0; interest_buffer_offset < interests_count; interest_buffer_offset++){
-        printf("%li\n", interest_buffer_offset);
+        //printf("%li\n", interest_buffer_offset);
         current_interest = interests_buffer[interest_buffer_offset];
         count = 0;
         Artist artist;
@@ -291,6 +292,7 @@ void reorg_interests()
                 interest_offset++){
                 person_interest =  interest_map[interest_offset];
                 if(person_interest == current_interest){
+                    if(person_offset == 111112){ printf("%hi\n",current_interest);}
                     count++;
                     total_count++;
                     fwrite(&person_offset, sizeof(int), 1, likedBy);
@@ -299,8 +301,8 @@ void reorg_interests()
 
         }
         artist.likedBy_n = count;
+
         fwrite(&artist, sizeof(Artist), 1, artists);
-        //SALVATAGGIO DEL SINGOLO NEW INTEREST
     }
     fclose(artists);
     fclose(likedBy);
@@ -322,21 +324,18 @@ int main(int argc, char *argv[])
     person_map   = (Person *)         mmapr(makepath(argv[1], "person",   "bin"), &person_length);
     knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows",    "bin"), &knows_length);
 
-    //save_locations();
-    //reorg_location(); //delete all friendships from knows file of friends in different cities
-    printf("what\n");
+    save_locations();
+    reorg_location(); //delete all friendships from knows file of friends in different cities
     person_map   = (Person *)         mmapr(makepath(argv[1], "new_person",   "bin"), &person_length);
-    printf("the fuck\n");
     knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "new_knows",    "bin"), &knows_length);
     new_knows_output_file = makepath(argv[1], "knows_reduced_temp", "bin");
     new_person_output_file = makepath(argv[1], "person_reduced", "bin");
 
-    //reorg_location_mutual();
+    reorg_location_mutual();
     interest_map = (unsigned short *) mmapr(makepath(path, "interest", "bin"), &interest_length);
     person_map = (Person *)   mmapr(makepath(path, "person_reduced",    "bin"), &person_length);
     likedBy_output_file = makepath(path, "likedBy", "bin");
     artists_output_file = makepath(path, "artists", "bin");
-    printf("person_reduced: %li\n", person_length / sizeof(Person));
     reorg_interests();
 
     return 0;
