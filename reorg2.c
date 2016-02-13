@@ -8,6 +8,7 @@
 
 #define PERSON_BUFFER 500000
 #define KNOWS_BUFFER 2000000
+#define ARTIST_BUFFER_NUMBER 4100
 
 Person *person_map;
 unsigned int *knows_map;
@@ -233,10 +234,9 @@ void reorg_interests()
     FILE *likedBy = open_binout(likedBy_output_file);
     unsigned int interests_buffer_size = 1000;
     unsigned int interests_count = 0;
-    unsigned int count = 0;
-    unsigned int total_count = 0;
+    unsigned long total_count = 0;
     unsigned short* interests_buffer  = malloc(sizeof(short) * interests_buffer_size);
-    long interest_offset, interest_buffer_offset;
+    unsigned long interest_offset, interest_buffer_offset;
     unsigned short current_interest, person_interest;
     unsigned short found;
     unsigned int person_offset;
@@ -276,7 +276,75 @@ void reorg_interests()
     //for(interest_offset = 0; interest_offset < interests_count; interest_offset++){ printf("%hi\n",interests_buffer[interest_offset] );}
     printf("%li \n", person_length / sizeof(Person));
     printf("interests: %i\n",interests_count);
-    //ora scorro tutti gli interessi uno alla volta. Nella nuova interest devo salvare first e count
+
+
+    unsigned int artist_start;
+    unsigned int artist_end = 0;
+    unsigned int artist_counts[ARTIST_BUFFER_NUMBER];
+    unsigned int likedBy_buffer_sizes[ARTIST_BUFFER_NUMBER];
+    unsigned int *likedBy_buffer[ARTIST_BUFFER_NUMBER];
+    unsigned long total_count2 = 0;
+    unsigned int initial_likedBy_buffer_size = 20;
+    int i;
+    for(i = 0; i < ARTIST_BUFFER_NUMBER; i++){
+            likedBy_buffer_sizes[i] = initial_likedBy_buffer_size;
+        }
+    for(i = 0;i < ARTIST_BUFFER_NUMBER; i++){
+            likedBy_buffer[i] = malloc(sizeof(int) * likedBy_buffer_sizes[i]);
+        }
+
+    int stop = 0;
+    while(!stop){
+        artist_counts[4] = 5;
+        bzero(artist_counts, sizeof(int) * ARTIST_BUFFER_NUMBER);
+        stop = 0;
+        artist_start = artist_end;
+        if(artist_end + ARTIST_BUFFER_NUMBER >= interests_count){
+            artist_end = interests_count;
+            stop = 1;
+        }
+        else{
+            artist_end += ARTIST_BUFFER_NUMBER;
+        }
+        printf("START = %i , END = %i\n",artist_start,artist_end );
+        Artist artists_buffer[ARTIST_BUFFER_NUMBER];
+        for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
+        {
+            person = &person_map[person_offset];
+            for (interest_offset = person->interests_first;
+                interest_offset < person->interests_first + person->interest_n;
+                interest_offset++){
+                person_interest =  interest_map[interest_offset];
+                found = 0;
+                int j;
+                for(j = 0; j < ARTIST_BUFFER_NUMBER && !found; j++){
+                    if(person_interest == interests_buffer[artist_start+j]){
+                        found = 1;
+                        if(artist_counts[j] == likedBy_buffer_sizes[j])
+                            {
+                                //printf("doubling size of likedBy %i\n", j);
+                                likedBy_buffer_sizes[j] *= 2;
+                                likedBy_buffer[j] = realloc(likedBy_buffer[j],sizeof(int) * likedBy_buffer_sizes[j]);
+                            }
+
+                        likedBy_buffer[j][artist_counts[j]] = person_offset;
+                        artist_counts[j]++;
+                        }
+                    }
+                }
+            }
+            //ALLA FINE AGGIORNO TUTTI I CAMPI DEGLI ARTIST E LI BUTTO GIU SU DISCO, AGGIORNO ANCHE IL TOTAL_COUNT
+            for(i = 0;i < ARTIST_BUFFER_NUMBER; i++){
+                fwrite(likedBy_buffer[i], sizeof(int), artist_counts[i], likedBy);
+                artists_buffer[i].likedBy_first = total_count2;
+                total_count2 += artist_counts[i];
+                artists_buffer[i].interest_id = interests_buffer[artist_start+i];
+                artists_buffer[i].likedBy_n = artist_counts[i];
+                fwrite(&artists_buffer[i], sizeof(Artist), 1, artists);
+            }
+        }
+
+/*
     for(interest_buffer_offset = 0; interest_buffer_offset < interests_count; interest_buffer_offset++){
         //printf("%li\n", interest_buffer_offset);
         current_interest = interests_buffer[interest_buffer_offset];
@@ -292,7 +360,6 @@ void reorg_interests()
                 interest_offset++){
                 person_interest =  interest_map[interest_offset];
                 if(person_interest == current_interest){
-                    if(person_offset == 111112){ printf("%hi\n",current_interest);}
                     count++;
                     total_count++;
                     fwrite(&person_offset, sizeof(int), 1, likedBy);
@@ -303,7 +370,7 @@ void reorg_interests()
         artist.likedBy_n = count;
 
         fwrite(&artist, sizeof(Artist), 1, artists);
-    }
+    }*/
     fclose(artists);
     fclose(likedBy);
     return;
