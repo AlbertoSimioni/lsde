@@ -74,8 +74,8 @@ unsigned char get_score(Person *person, unsigned short areltd[])
 
 void save_scores_2(unsigned short artist_id, unsigned short areltd[])
 {
-    long artist_offset;
-    unsigned int liked_offset;
+    unsigned int artist_offset;
+    unsigned long liked_offset;
     Artist *artist;
 
     scores_map = malloc(sizeof(char) * (person_length / sizeof(Person)));
@@ -157,8 +157,8 @@ void save_scores(unsigned short artist, unsigned short areltd[])
 
 void query(unsigned short qid, unsigned short artist, unsigned short areltd[], unsigned short bdstart, unsigned short bdend)
 {
-    unsigned int person_offset;
-    unsigned long knows_offset, knows_offset2;
+    unsigned int person_offset, knows_pos; //offsets in person_map
+    unsigned long knows_offset, knows_offset2; //offsets in knows_map
 
     Person *person, *knows;
     unsigned char score;
@@ -178,22 +178,8 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
         // filter by birthday
         if (person->birthday < bdstart || person->birthday > bdend) continue;
 
-        // person must not like artist yet
-        if(scores_map[person_offset] == 4) continue;
-        //if (likes_artist(person, artist)) continue;
-
         // but person must like some of these other guys
-        //int score1 = get_score(person, areltd);
-
         score = scores_map[person_offset];
-        /*
-        if(score != score1){
-            if(score != 4){
-                printf("different scores\n");
-            }else{
-                printf("diversi ma è meno uno\n");
-            }
-        }*/
         if (score == 0 || score == 4) continue;
 
         // check if friend lives in same city and likes artist
@@ -201,24 +187,11 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
                 knows_offset < person->knows_first + person->knows_n;
                 knows_offset++)
         {
-            unsigned int knows_pos = knows_map[knows_offset];
+            knows_pos = knows_map[knows_offset];
             knows = &person_map[knows_pos];
 
-            // int res1=3,res2=0;
-            // res1=(person->location != knows->location);
-            // res2=(location_map[person_offset] != location_map[knows_pos]);
-            // if(res1!=res2)
-            //     printf("diversi\n");
-            //if (person->location != knows->location) continue;
-            //if(location_map[person_offset] != location_map[knows_pos]) continue;
-
-
-            // if((!likes_artist(knows, artist))  != (scores_map[knows_pos] != 4))
-            //     printf("hehehe\n");
-            // // friend must already like the artist
-            // if(!likes_artist(knows, artist)) continue;
+            // check if friend likes artist
             if (scores_map[knows_pos] != 4) continue;
-
 
             // realloc result array if we run out of space
             if (result_length >= result_set_size)
@@ -230,10 +203,8 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
             results[result_length].knows_id = knows->person_id;
             results[result_length].score = score;
             result_length++;
-
         }
     }
-
 
     // sort result
     qsort(results, result_length, sizeof(Result), &result_comparator);
@@ -259,20 +230,9 @@ void query_line_handler(unsigned char nfields, char **tokens)
     q_bdaystart     = birthday_to_short(tokens[QUERY_FIELD_BS]);
     q_bdayend       = birthday_to_short(tokens[QUERY_FIELD_BE]);
 
-printf("here\n");
     //save_scores(q_artist, q_relartists);
     save_scores_2(q_artist, q_relartists);
-    /*
-    int i=0;
-    for(;i<person_length/sizeof(Person);++i){
-        unsigned char score = get_score(&person_map[i], q_relartists);
-        if(likes_artist(&person_map[i], q_artist))
-            score=4;
 
-        if(score!=scores_map[i]){
-            printf("diversi %u , %u , %li \n",score,scores_map[i],i);
-        }
-    }*/
     query(q_id, q_artist, q_relartists, q_bdaystart, q_bdayend);
 }
 
@@ -291,8 +251,8 @@ void test(){
   }
   printf("size1: %i\n ",count);
 
-  long artist_offset;
-    unsigned int liked_offset;
+  unsigned int artist_offset;
+    unsigned long liked_offset;
     Artist *artist;
 
 
@@ -315,8 +275,6 @@ void test(){
 
     }
     printf("\n size1: %i\n ",count2);
-
-
 }
 
 
@@ -327,9 +285,6 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Usage: [datadir] [query file] [results file]\n");
         exit(1);
     }
-    char *person_input_file    = makepath(argv[1], "person",   "csv");
-    char *interest_input_file  = makepath(argv[1], "interest", "csv");
-    char *knows_input_file     = makepath(argv[1], "knows",    "csv");
 
     /* memory-map files created by loader */
     person_map   = (Person *)         mmapr(makepath(argv[1], "person_reduced",   "bin"), &person_length);
@@ -338,7 +293,6 @@ int main(int argc, char *argv[])
     artists_map = (Artist *)  mmapr(makepath(argv[1], "artists",    "bin"), &artists_length);
     liked_map = (unsigned int *)  mmapr(makepath(argv[1], "likedBy",    "bin"), &liked_length);
 
-printf("finish loading\n");
 
     outfile = fopen(argv[3], "w");
     if (outfile == NULL)
@@ -346,7 +300,6 @@ printf("finish loading\n");
         fprintf(stderr, "Can't write to output file at %s\n", argv[3]);
         exit(-1);
     }
-printf("oh\n");
     /* run through queries */
     //test();
     parse_csv(argv[2], &query_line_handler);
