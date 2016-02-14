@@ -19,6 +19,18 @@ typedef struct {
 	unsigned short interest_n;
 } Person;
 
+typedef struct {
+    unsigned long  person_id;
+    unsigned short birthday;
+    unsigned int  knows_first;
+    unsigned short knows_n;
+} Person_compact;
+
+typedef struct{
+    unsigned short birthday;
+    unsigned int person_offset;
+} Person_birthday;
+
 typedef struct{
     unsigned int person_offset;
     unsigned long knows_first;

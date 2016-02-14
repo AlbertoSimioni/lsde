@@ -17,12 +17,14 @@
 #define QUERY_FIELD_BS 5
 #define QUERY_FIELD_BE 6
 
-Person *person_map;
+Person_compact *person_map;
 unsigned int *knows_map;
 unsigned short *interest_map;
 unsigned char *scores_map;
 Artist *artists_map;
 unsigned int *liked_map;
+clock_t start, end;
+
 
 unsigned long person_length, knows_length, interest_length, score_length, artists_length, liked_length;
 
@@ -78,8 +80,8 @@ void save_scores_2(unsigned short artist_id, unsigned short areltd[])
     unsigned long liked_offset;
     Artist *artist;
 
-    scores_map = malloc(sizeof(char) * (person_length / sizeof(Person)));
-    bzero(scores_map, sizeof(char) * (person_length / sizeof(Person)));
+    scores_map = malloc(sizeof(char) * (person_length / sizeof(Person_compact)));
+    bzero(scores_map, sizeof(char) * (person_length / sizeof(Person_compact)));
 
     for (artist_offset = 0;
             artist_offset < artists_length / sizeof(Artist);
@@ -133,7 +135,6 @@ char likes_artist(Person *person, unsigned short artist)
 
 
 
-
 void save_scores(unsigned short artist, unsigned short areltd[])
 {
     Person *person;
@@ -160,21 +161,14 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
     unsigned int person_offset, knows_pos; //offsets in person_map
     unsigned long knows_offset, knows_offset2; //offsets in knows_map
 
-    Person *person, *knows;
+    Person_compact *person, *knows;
     unsigned char score;
 
     unsigned int result_length = 0, result_idx, result_set_size = 1000;
     Result *results = malloc(result_set_size * sizeof (Result));
-    printf("Running query %d\n", qid);
-
-    for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
+    for (person_offset = 0; person_offset < person_length / sizeof(Person_compact); person_offset++)
     {
         person = &person_map[person_offset];
-
-        if (person_offset > 0 && person_offset % REPORTING_N == 0)
-        {
-            printf("%.2f%%\n", 100 * (person_offset * 1.0 / (person_length / sizeof(Person))));
-        }
         // filter by birthday
         if (person->birthday < bdstart || person->birthday > bdend) continue;
 
@@ -192,7 +186,6 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
 
             // check if friend likes artist
             if (scores_map[knows_pos] != 4) continue;
-
             // realloc result array if we run out of space
             if (result_length >= result_set_size)
             {
@@ -215,6 +208,7 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
         fprintf(outfile, "%d|%d|%lu|%lu\n", qid, results[result_idx].score,
                 results[result_idx].person_id, results[result_idx].knows_id);
     }
+
 }
 
 void query_line_handler(unsigned char nfields, char **tokens)
@@ -230,10 +224,17 @@ void query_line_handler(unsigned char nfields, char **tokens)
     q_bdaystart     = birthday_to_short(tokens[QUERY_FIELD_BS]);
     q_bdayend       = birthday_to_short(tokens[QUERY_FIELD_BE]);
 
+     
+    // start = clock();
     //save_scores(q_artist, q_relartists);
     save_scores_2(q_artist, q_relartists);
-
+    //end = clock();
+//printf("Scores: %i\n", end-start);
+     
+     //start = clock();
     query(q_id, q_artist, q_relartists, q_bdaystart, q_bdayend);
+   // end = clock();
+//printf("query:  %i\n", end-start);
 }
 
 
@@ -277,6 +278,16 @@ void test(){
     printf("\n size1: %i\n ",count2);
 }
 
+void read_knows(char* path){
+    FILE *myFile;
+    myFile = fopen(makepath(path, "knows_reduced",    "bin"), "r");
+    fseek(myFile, 0L, SEEK_END);
+    knows_length = ftell(myFile);
+    fseek(myFile, 0L, SEEK_SET);
+    knows_map = malloc(sizeof(int) * (knows_length/sizeof(int)));
+    fread(knows_map, sizeof(unsigned int), knows_length/sizeof(int), myFile);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -287,12 +298,13 @@ int main(int argc, char *argv[])
     }
 
     /* memory-map files created by loader */
-    person_map   = (Person *)         mmapr(makepath(argv[1], "person_reduced",   "bin"), &person_length);
+    person_map   = (Person_compact *)    mmapr(makepath(argv[1], "person_compact_reduced",   "bin"), &person_length);
     interest_map = (unsigned short *) mmapr(makepath(argv[1], "interest", "bin"), &interest_length);
-    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows_reduced",    "bin"), &knows_length);
+    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows_reduced",    "bin"), &knows_length);    
     artists_map = (Artist *)  mmapr(makepath(argv[1], "artists",    "bin"), &artists_length);
     liked_map = (unsigned int *)  mmapr(makepath(argv[1], "likedBy",    "bin"), &liked_length);
 
+    //read_knows(argv[1]);
 
     outfile = fopen(argv[3], "w");
     if (outfile == NULL)
@@ -303,5 +315,6 @@ int main(int argc, char *argv[])
     /* run through queries */
     //test();
     parse_csv(argv[2], &query_line_handler);
+
     return 0;
 }
