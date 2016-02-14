@@ -15,13 +15,14 @@ Person *person_map;
 unsigned int *knows_map;
 unsigned int *knows_map_reduced;
 unsigned short *interest_map;
-char *person_output_file, *interest_output_file, *knows_output_file;
+char *person_output_file, *interest_output_file, *knows_output_file,* person_birthday_output_file;
 char* likedBy_output_file,  *new_knows_output_file, *new_person_output_file, *artists_output_file;
 char* path;
 unsigned long person_length, knows_length, interest_length;
 unsigned long loc_size;
 unsigned short *location_map;
 unsigned short *visited_locations;
+
 
 void save_locations()
 {
@@ -382,23 +383,12 @@ void reduce_person(Person* p1, Person_compact* p2){
     p2->knows_n=p1->knows_n;
 }
 
-int person_birthday_comparator(const void* p1, const void* p2){
-    Person_birthday* person1=(Person_birthday*) p1;
-    Person_birthday* person2=(Person_birthday*) p2;
-    if(person1->birthday<=person2->birthday)
-        return -1;
-    else
-        return 1;
-}
 
 void reorg_person(){
     Person *person, *knows;
     FILE *new_person = open_binout(new_person_output_file);
 
     printf("size %i\n", person_length/sizeof(Person));
-    qsort(person_map, person_length/sizeof(Person), sizeof(Person), &person_birthday_comparator);
-
-
 
     unsigned int person_offset;
     Person_compact person_copy;
@@ -436,11 +426,14 @@ void reorg_person_birthday(){
     }
     printf("offset %i\n",person_offset );
     qsort(birthdays, person_offset, sizeof(Person_birthday), &person_birthday_comparator);
-    for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
+    /*for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
     {
         Person_birthday* p=&birthdays[person_offset];
         printf("bday %hi, offset %i\n",p->birthday, p->person_offset );
-    }
+    }*/
+    FILE *person_birthday_file = open_binout(person_birthday_output_file);
+    fwrite(birthdays,person_offset,sizeof(Person_birthday),person_birthday_file);
+    fclose(person_birthday_file);
 }
 
 int main(int argc, char *argv[])
@@ -471,7 +464,8 @@ int main(int argc, char *argv[])
     artists_output_file = makepath(path, "artists", "bin");
     //reorg_interests();
     new_person_output_file = makepath(argv[1], "person_compact_reduced", "bin");
-
+    reorg_person();
+    person_birthday_output_file = makepath(argv[1], "person_birthday", "bin");
     reorg_person_birthday();
 
     return 0;
