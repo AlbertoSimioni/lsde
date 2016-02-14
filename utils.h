@@ -1,4 +1,5 @@
 #include <time.h>
+#include <string.h>
 
 #define REPORTING_N 1000000
 #define LINEBUFLEN 1024
