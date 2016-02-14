@@ -21,7 +21,6 @@ typedef struct {
 
 typedef struct {
     unsigned long  person_id;
-    unsigned short birthday;
     unsigned int  knows_first;
     unsigned short knows_n;
 } Person_compact;

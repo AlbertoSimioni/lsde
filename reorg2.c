@@ -56,15 +56,12 @@ void save_locations()
             ++count;
             if(count == loc_size)
             {
-                printf("doubling size of visited\n");
                 loc_size = loc_size * 2;
                 visited_locations = realloc(visited_locations, loc_size * sizeof(short));
             }
         }
     }
     loc_size = count;
-    printf("visited: %li\n", loc_size );
-
     visited_locations = realloc(visited_locations, loc_size * sizeof(short));
 }
 
@@ -76,11 +73,6 @@ void reorg_location()
     unsigned int knows_pos;
     unsigned long new_first = 0, total_count = 0;
     unsigned int *offests_buffer=malloc(sizeof(int) * person_length/sizeof(Person));
-
-    //unsigned long *temp_first = malloc(sizeof(long) * (person_length / sizeof(Person)));
-    //unsigned short *temp_count = malloc(sizeof(short) * (person_length / sizeof(Person)));
-printf("new size person: %li\n", person_length / sizeof(Person));
-
 
     Person *person, *knows;
     FILE *new_knows = open_binout(new_knows_output_file);
@@ -102,48 +94,20 @@ printf("new size person: %li\n", person_length / sizeof(Person));
         {
             //this is person's friend, let's check if it's reciprocal
             knows_pos = knows_map[knows_offset];
-            //knows = &person_map[knows_pos];
 
             if(location_map[person_offset] != location_map[knows_pos]) continue;
             count++;
             total_count++;
             fwrite(&knows_pos, sizeof(int), 1, new_knows);
-
-            // knows_buffer[total_count % KNOWS_BUFFER] = knows_pos;
-            // ++count;
-            // ++total_count;
-            // if((total_count % KNOWS_BUFFER) == 0)
-            // {
-            //     printf("writing knows\n");
-            //     fwrite(&knows_buffer, sizeof(int), KNOWS_BUFFER, new_knows);
-            // }
         }
 
         person_copy.knows_n = count;
         fwrite(&person_copy, sizeof(Person), 1, new_person);
-        //  if(count>10)
-        //     print_person(&person_copy);
-
-        // if(person_offset < 10 )
-        // {
-        //     printf("Person Copy %i:\n", person_offset);
-        //     print_person(&person_copy);
-        // }
-
-        // person_buffer[person_offset % PERSON_BUFFER] = *person;
-        // person_buffer[person_offset % PERSON_BUFFER].knows_first = new_first;
-        // person_buffer[person_offset % PERSON_BUFFER].knows_n = count;
-
-        // if(((person_offset + 1) % PERSON_BUFFER) == 0)
-        // {
-        //     printf("writing person\n");
-        //     fwrite(person_buffer, sizeof(Person), PERSON_BUFFER, new_person);
-        // }
+       
     }
     fclose(new_person);
     fclose(new_knows);
 
-    //TODO clear buffers
     return;
 }
 
@@ -161,9 +125,6 @@ void reorg_location_mutual()
     Person *person, *knows;
     FILE *new_knows = open_binout(new_knows_output_file);
     FILE *new_person = open_binout(new_person_output_file);
-
-    //Person *person_buffer = malloc(sizeof(Person) * PERSON_BUFFER);
-    //unsigned int knows_buffer[KNOWS_BUFFER];
 
     Person person_copy;
     person_count=0;
@@ -209,8 +170,6 @@ void reorg_location_mutual()
     fclose(new_person);
 
 
-
-    printf("reached: %s\n", new_knows_output_file);
     knows_map_reduced    = (unsigned int *)   mmapr(makepath(path, "knows_reduced_temp",    "bin"), &knows_length);
     new_knows_output_file = makepath(path, "knows_reduced", "bin");
     new_knows = open_binout(new_knows_output_file);
@@ -220,8 +179,6 @@ void reorg_location_mutual()
 
         fwrite(&offests_buffer[knows_map_reduced[knows_offset]], sizeof(int), 1, new_knows);
     }
-
-
     return;
 }
 
@@ -344,33 +301,6 @@ void reorg_interests()
             }
         }
 
-/*
-    for(interest_buffer_offset = 0; interest_buffer_offset < interests_count; interest_buffer_offset++){
-        //printf("%li\n", interest_buffer_offset);
-        current_interest = interests_buffer[interest_buffer_offset];
-        count = 0;
-        Artist artist;
-        artist.interest_id = current_interest;
-        artist.likedBy_first = total_count;
-        for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
-        {
-            person = &person_map[person_offset];
-            for (interest_offset = person->interests_first;
-                interest_offset < person->interests_first + person->interest_n;
-                interest_offset++){
-                person_interest =  interest_map[interest_offset];
-                if(person_interest == current_interest){
-                    count++;
-                    total_count++;
-                    fwrite(&person_offset, sizeof(int), 1, likedBy);
-                }
-            }
-
-        }
-        artist.likedBy_n = count;
-
-        fwrite(&artist, sizeof(Artist), 1, artists);
-    }*/
     fclose(artists);
     fclose(likedBy);
     return;
@@ -378,7 +308,6 @@ void reorg_interests()
 
 void reduce_person(Person* p1, Person_compact* p2){
     p2->person_id=p1->person_id;
-    p2->birthday=p1->birthday;
     p2->knows_first= p1->knows_first;
     p2->knows_n=p1->knows_n;
 }
@@ -394,17 +323,9 @@ void reorg_person(){
     Person_compact person_copy;
     for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
     {
-        //printf("in ciclo\n");
         person = &person_map[person_offset];
         reduce_person(person, &person_copy);
-        // if(person_copy.person_id != person->person_id)
-        //     printf("diversi\n");
-        // if(person_copy.birthday != person->birthday)
-        //     printf("b diversi\n");
-        // if(person_copy.knows_first!=person->knows_first)
-        //     printf("knows diversi\n");
-        // if(person_copy.knows_n!=person->knows_n)
-        //     printf("n diversi\n");
+
         fwrite(&person_copy, sizeof(Person_compact), 1, new_person);
     }
     fclose(new_person);
@@ -425,11 +346,7 @@ void reorg_person_birthday(){
         birthdays[person_offset]=person_copy;
     }
     qsort(birthdays, person_length / sizeof(Person), sizeof(Person_birthday), &person_birthday_comparator);
-    for (person_offset = 0; person_offset < person_length / sizeof(Person); person_offset++)
-    {
-        Person_birthday* p=&birthdays[person_offset];
-        if(p->birthday==430) printf("dopo bday %hi, person_offset %i, offset: %i\n",p->birthday, p->person_offset, person_offset);
-    }
+
     FILE *person_birthday_file = open_binout(person_birthday_output_file);
     fwrite(birthdays,person_offset,sizeof(Person_birthday),person_birthday_file);
     fclose(person_birthday_file);
@@ -461,7 +378,7 @@ int main(int argc, char *argv[])
     person_map = (Person *)   mmapr(makepath(path, "person_reduced",    "bin"), &person_length);
     likedBy_output_file = makepath(path, "likedBy", "bin");
     artists_output_file = makepath(path, "artists", "bin");
-    //reorg_interests();
+    reorg_interests();
     new_person_output_file = makepath(argv[1], "person_compact_reduced", "bin");
     
     person_birthday_output_file = makepath(argv[1], "person_birthday", "bin");
