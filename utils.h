@@ -57,7 +57,7 @@ int person_birthday_comparator(const void* p1, const void* p2){
     Person_birthday* person2=(Person_birthday*) p2;
     if(person1->birthday<person2->birthday)
         return -1;
-    else if(person1->birthday=person2->birthday)
+    else if(person1->birthday==person2->birthday)
         return 0;
     else
         return 1;
