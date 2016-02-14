@@ -1,0 +1,28 @@
+-Describe the problems
+
+-We started with splitting the code in a precomputation of the scores
+
+-Remove friendships not in the same location
+    ->First step -> creating an array with all the different locations
+    ->Create a file with those friendships removed
+    ->no need to check in the cruncher
+-Remove not mutual friendships
+    -updating of the fields offset and n of person
+    ->No need to check in the cruncher anymore the mutual friendship
+-Remove people that don't have any remained friendship
+
+
+-Explain the strategy used to precompute the scores -> explain the meaning of scores = 4; with the inverted table of artists and persons
+  -How it's computed (2 phases)  the second with buffers becouse without it's too slow -> say that this is the slower part of the reorg
+  -Explain how we find the artists in the cruncher (just one for)
+  -Remove unused
+
+
+-Explain why we didn't create a file with the couples
+    ->there is still a random access on person, but the file is small -> it fits in memory
+    ->We prefer to mantain this structure in a way not to consider the friendship of a person that doesn't have a good score or a good birthday and to mantain a small file
+
+-Ordering the people by birthday
+    ->creation of an index -> explain why we didn't reorder directly the person table
+    ->remove the column of birthdays from people
+    ->binary search of the start person -> We can skip a lot of people in the for in the cruncher
