@@ -21,6 +21,7 @@ Person_compact *person_map;
 Person_birthday *person_birthday_map;
 unsigned int *knows_map;
 unsigned char *scores_map;
+char *path;
 Artist *artists_map;
 unsigned int *liked_map;
 clock_t start, end;
@@ -32,7 +33,7 @@ FILE *outfile;
 
 int binsearch(int start, int end, short value)
 {
-    int res, middle;
+    int middle;
     // Loop while the interval of possible matches is non-empty
     while (end > start)
     {
@@ -50,7 +51,7 @@ int binsearch(int start, int end, short value)
         {
             while(middle >= start && person_birthday_map[middle].birthday == value)
             {
-                middle--;
+                --middle;
             }
             if(middle < start)
             {
@@ -140,14 +141,17 @@ void query(unsigned short qid, unsigned short artist, unsigned short areltd[], u
     int person_num = person_birthday_length / sizeof(Person_birthday);
 
     int start_pos = binsearch(0, person_num, bdstart);
-
+    //int start_pos=0;
     for(offset = start_pos; offset < person_num && person_birthday_map[offset].birthday <= bdend; offset++)
     {
-        person = &person_map[person_birthday_map[offset].person_offset];
+        //if(person_birthday_map[offset].birthday<bdstart) continue;
+        
         // but person must like some of these other guys
-
         score = scores_map[person_birthday_map[offset].person_offset];
         if (score == 0 || score == 4) continue;
+
+        person = &person_map[person_birthday_map[offset].person_offset];
+
 
         // check if friend lives in same city and likes artist
         for (knows_offset = person->knows_first;
@@ -198,12 +202,16 @@ void query_line_handler(unsigned char nfields, char **tokens)
     q_bdaystart     = birthday_to_short(tokens[QUERY_FIELD_BS]);
     q_bdayend       = birthday_to_short(tokens[QUERY_FIELD_BE]);
 
+    artists_map = (Artist *)  mmapr(makepath(path, "artists",    "bin"), &artists_length);
+
+    liked_map = (unsigned int *)  mmapr(makepath(path, "likedBy",    "bin"), &liked_length);
 
      //start = clock();
     save_scores(q_artist, q_relartists);
     //end = clock();
     //printf("Scores: %i\n", end-start);
-
+munmap(artists_map, artists_length);
+munmap(liked_map, liked_length);
     //start = clock();
     query(q_id, q_artist, q_relartists, q_bdaystart, q_bdayend);
      //end = clock();
@@ -214,18 +222,17 @@ void query_line_handler(unsigned char nfields, char **tokens)
 
 int main(int argc, char *argv[])
 {
+    //start=clock();
     if (argc < 4)
     {
         fprintf(stderr, "Usage: [datadir] [query file] [results file]\n");
         exit(1);
     }
-
+    path=argv[1];
     /* memory-map files created by loader */
-    person_map   = (Person_compact *)    mmapr(makepath(argv[1], "person_compact_reduced",   "bin"), &person_length);
-    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows_reduced",    "bin"), &knows_length);
-    artists_map = (Artist *)  mmapr(makepath(argv[1], "artists",    "bin"), &artists_length);
-    liked_map = (unsigned int *)  mmapr(makepath(argv[1], "likedBy",    "bin"), &liked_length);
-    person_birthday_map = (Person_birthday *) mmapr(makepath(argv[1], "person_birthday", "bin"), &person_birthday_length);
+    person_map   = (Person_compact *)    mmapr(makepath(argv[1], "person_compact",   "bin"), &person_length);
+    knows_map    = (unsigned int *)   mmapr(makepath(argv[1], "knows_mutual",    "bin"), &knows_length);
+    person_birthday_map = (Person_birthday *) mmapr(makepath(argv[1], "birthday", "bin"), &person_birthday_length);
     outfile = fopen(argv[3], "w");
     if (outfile == NULL)
     {
@@ -233,6 +240,7 @@ int main(int argc, char *argv[])
         exit(-1);
     }
     parse_csv(argv[2], &query_line_handler);
-
+ //end = clock();
+    //printf("Main:  %i\n", end-start);
     return 0;
 }

@@ -419,7 +419,7 @@ int main(int argc, char *argv[])
 
     reorg_person_birthday(argv[1], "birthday");
 
-    reorg_person(argv[1], "person_compact_reduced");
+    reorg_person(argv[1], "person_compact");
 
     munmap(person_map,person_length);
     munmap(interest_map,interest_length);
