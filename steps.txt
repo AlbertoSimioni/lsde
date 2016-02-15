@@ -26,3 +26,5 @@
     ->creation of an index -> explain why we didn't reorder directly the person table
     ->remove the column of birthdays from people
     ->binary search of the start person -> We can skip a lot of people in the for in the cruncher
+
+-Mention the reduced size of the files
