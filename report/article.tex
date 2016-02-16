@@ -90,6 +90,14 @@ After applying these optimizations we created the files:
 
 
 \section{Interests inverted table}
+In the basic implementation we compute the scores of each person by reading all his list of artists, checking if they like the artists that are present int the query. In the majority of the cases the person doesn't like the artists of the query or likes also a lot of other artists. This means that we read and check a lot of interests that aren't useful for the current query. We decided to optimize the computation of the scores by creating an inverted table between artists and person. In the inverted table, for each artist, there is a list of people that likes the artist.
+In this way we can access directly to the lists of artists of the query.
+\par One problem in implementing this inverted table is that the memory (1GB) is not enough to contain all the connections between artists and person. For this reason we decided to compute the inverted table in multiple steps, considering in each step only a portion of the total number of artists. In this way the usage of the memory and the swapping to disk are reduced.
+After the computation the following files are created:
+\begin{itemize}
+\item \texttt{artists}: table with all the different artists. Each entry has an id of the artists, the position in the inverted table where starts his list and a field that indicates the length of the list;
+\item \texttt{likedBy}: this file is the inverted table, it contains only one field that indicates the offset of the person in person table.
+\end{itemize}
 
 
 \section{Birthday ordering}
@@ -108,6 +116,11 @@ In figure \ref{fig:data} we show the data structure used by the cruncher to perf
 
 
 \section{Cruncher}
+The computations of query inside the cruncher is split in two phases:
+\begin{itemize}
+\item Precomputation of the scores: to compute the score we make use of the files \texttt{artists} and \texttt{likedBy}. To search the artists of the current query we just need to go through the artists table one time. When an artist is found we update the scores of the people that are inside the list of the artist;
+\item Computation of the query: to compute the query we run through the people that have their birthday in the interval required by the query. To go through only those people we leverage the birthday index, performing a binary search of the person that have the lowest birthday that is inside the interval required by the query.\par Other important  aspect of the computation of the query is that there is no more the need to check the location and the mutual friendship. By removing the mutual friendship check the non-sequential access to the knows table is avoided. On the other hand the non-sequential access to the person table to get the information about the friend is still present in the cruncher but it doesn't slow down the performance because the reduced person table fits in memory, so there isn't access to disk to retrieve the friend. 
+\end{itemize}  
 
 \section{Possible improvements}
 \begin{itemize}
