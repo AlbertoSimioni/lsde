@@ -1,0 +1,121 @@
+\input{prelude.tex}
+\input{config.tex}
+
+
+\title{Report Assignment 1 - Large Scale Data Engineering}
+
+
+% Place the author information here.  Please hand-code the contact
+% information and notecalls; do *not* use \footnote commands.  Let the
+% author contact information appear immediately below the author names
+% as shown.  We would also prefer that you don't change the type-size
+% settings shown here.
+
+\author{
+Alberto Simioni \hspace asi\\
+Federico Ziliotto \hspace fzo300
+}
+
+%\author
+%{John Smith,$^{1\ast}$ Jane Doe,$^{1}$ Joe Scientist$^{2}$\\
+%\\
+%\normalsize{$^{1}$Department of Chemistry, University of Wherever,}\\
+%\normalsize{An Unknown Address, Wherever, ST 00000, USA}\\
+%\normalsize{$^{2}$Another Unknown Address, Palookaville, ST 99999, USA}\\
+%\\
+%\normalsize{$^\ast$To whom correspondence should be addressed; E-mail:  jsmith@wherever.edu.}
+%}
+
+% Include the date command, but leave its argument blank.
+
+\date{}
+
+
+
+%%%%%%%%%%%%%%%%% END OF PREAMBLE %%%%%%%%%%%%%%%%
+
+
+
+% Double-space the manuscript.
+
+
+% Make the title.
+
+
+
+\begin{document}
+\maketitle
+
+\include{Sections/Introduzione.tex}
+%\include{Section2}
+%\include{Section3}
+%\include{Section4}
+%\include{Conclusion}
+
+%*******    Figure and Subfigure example ***********
+%\begin{figure}[tbh]
+% \includegraphics[width=1\linewidth]{circle}
+% \caption[Circonferenza]{Circle}
+% \label{fig:circle}
+% \end{figure}%
+
+% \begin{figure}[tbh]
+% \begin{subfigure}{.5\textwidth}
+% \includegraphics[width=1\linewidth]{circle}
+% \caption[Circonferenza]{Circle}
+% \label{fig:circle}
+% \end{subfigure}%
+% \begin{subfigure}{0.5\textwidth}
+% \includegraphics[width=1\linewidth]{random}
+% \caption[Random]{Random}
+% \label{fig:random}
+% \end{subfigure}
+% \end{figure}
+%%%***************************************%%
+
+
+
+% Place your abstract within the special {sciabstract} environment.
+
+
+
+
+% In setting up this template for *Science* papers, we've used both
+% the \section* command and the \paragraph* command for topical
+% divisions.  Which you use will of course depend on the type of paper
+% you're writing.  Review Articles tend to have displayed headings, for
+% which \section* is more appropriate; Research Articles, when they have
+% formal topical divisions at all, tend to signal them with bold text
+% that runs into the paragraph, for which \paragraph* is the right
+% choice.  Either way, use the asterisk (*) modifier, as shown, to
+% suppress numbering.
+
+\section{Data Size Analysis}
+The main bottleneck of the basic algorithm is memory. With only 1GB of available memory and binary files to load for a total of ~5.6GB (\texttt{person, interest and knows maps}) we first analyzed the query to look for ways to drop unnecessary data. The possible optimization we found were:
+\begin{enumerate}
+    \item Consider only relationships between people in the same location: the query searches for friendships of people that live in the same city, while the \texttt{knows} file contains all relationships. By removing those between people in different cities we both reduce the size of the data we have to look into and the computation cost of searching through friendships that are not important for the results of the query;
+    \item Consider only mutual friendships: each person can have a knows relationship with each other but this is unilateral. Since the query asks for only mutual relationships between two person (if P1,P2 are two persons, then in the \texttt{knows map} we can find both P1->P2 and P2->P1) we drop all single relationships between people;
+    \item Remove people that don't have any mutual friendship with someone in the same city: it follows directly from the steps above, these type of persons are not useful because they will surely not be result of the query.
+\end{enumerate}
+After applying these optimizations we created the files:
+\begin{itemize}
+    \item \texttt{knows_location}: original knows that contains only relationships between people in the same location;
+    \item \texttt{person_location}: person map with updated indexes knows_first and knows_n to reflect the knows_location;
+    \item \texttt{knows_mutual}: knows relationships only between people that know each other;
+    \item \texttt{person_mutual}: person map that contains only people that have at least a mutual friendship in the same location and has the correct indexes knows_first and knows_n (for the knows_mutual);
+\end{itemize}
+ \texttt{}
+\section{Reorg function}
+
+\section{Cruncher}
+
+
+
+
+
+
+\clearpage
+
+%\bibbycategory % equivale a dare un \printbibliography per ogni categoria
+
+\end{document}
