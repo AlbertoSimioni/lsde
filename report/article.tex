@@ -2,19 +2,6 @@
 \input{config.tex}
 
 
-\title{Report Assignment 1 - Large Scale Data Engineering}
-
-
-% Place the author information here.  Please hand-code the contact
-% information and notecalls; do *not* use \footnote commands.  Let the
-% author contact information appear immediately below the author names
-% as shown.  We would also prefer that you don't change the type-size
-% settings shown here.
-
-\author{
-Alberto Simioni \hspace asi\\
-Federico Ziliotto \hspace fzo300
-}
 
 %\author
 %{John Smith,$^{1\ast}$ Jane Doe,$^{1}$ Joe Scientist$^{2}$\\
@@ -25,10 +12,6 @@ Federico Ziliotto \hspace fzo300
 %\\
 %\normalsize{$^\ast$To whom correspondence should be addressed; E-mail:  jsmith@wherever.edu.}
 %}
-
-% Include the date command, but leave its argument blank.
-
-\date{}
 
 
 
@@ -46,7 +29,7 @@ Federico Ziliotto \hspace fzo300
 \begin{document}
 \maketitle
 
-\include{Sections/Introduzione.tex}
+%\include{Sections/Introduzione.tex}
 %\include{Section2}
 %\include{Section3}
 %\include{Section4}
@@ -95,20 +78,44 @@ The main bottleneck of the basic algorithm is memory. With only 1GB of available
 \begin{enumerate}
     \item Consider only relationships between people in the same location: the query searches for friendships of people that live in the same city, while the \texttt{knows} file contains all relationships. By removing those between people in different cities we both reduce the size of the data we have to look into and the computation cost of searching through friendships that are not important for the results of the query;
     \item Consider only mutual friendships: each person can have a knows relationship with each other but this is unilateral. Since the query asks for only mutual relationships between two person (if P1,P2 are two persons, then in the \texttt{knows map} we can find both P1->P2 and P2->P1) we drop all single relationships between people;
-    \item Remove people that don't have any mutual friendship with someone in the same city: it follows directly from the steps above, these type of persons are not useful because they will surely not be result of the query.
+    \item Remove people that don't have any mutual friendship with someone in the same city: it follows directly from the steps above, these type of people are not useful because they will surely not be result of the query.
 \end{enumerate}
 After applying these optimizations we created the files:
 \begin{itemize}
-    \item \texttt{knows_location}: original knows that contains only relationships between people in the same location;
-    \item \texttt{person_location}: person map with updated indexes knows_first and knows_n to reflect the knows_location;
-    \item \texttt{knows_mutual}: knows relationships only between people that know each other;
-    \item \texttt{person_mutual}: person map that contains only people that have at least a mutual friendship in the same location and has the correct indexes knows_first and knows_n (for the knows_mutual);
+    \item \texttt{knows\_location}: original knows that contains only relationships between people in the same location;
+    \item \texttt{person\_location}: person map with updated indexes knows\_first and knows\_n to reflect the knows\_location;
+    \item \texttt{knows\_mutual}: knows relationships only between people that know each other;
+    \item \texttt{person\_mutual}: person map that contains only people that have at least a mutual friendship in the same location and has the correct indexes knows\_first and knows\_n (for the knows\_mutual);
 \end{itemize}
- \texttt{}
-\section{Reorg function}
+
+
+\section{Interests inverted table}
+
+
+\section{Birthday ordering}
+In the naive implementation we run through the entire \texttt{person\_map} and check every time if the current person has the birthday in the range of the query. We decided to optimize the access to the data by ordering the person by birthday. We had two options: order the people in the data structure (and update the indexes contained in the interests and knows files) or create a new index containing the position of the person and its birthday and then order it. We decided to go for the latter that was easier to implement without modifying the other data structures but has the disadvantage that it uses more memory. \\
+In the cruncher, we use the birthday index to first search the first occurrence of a person with a birthday in the range required by the current query, then we know all the people inside the range follows the first one until we reach someone with a birthday that is out of the bound.
+
+\section{Data Structures}
+
+\begin{figure}[tbh]
+\includegraphics[width=1\linewidth]{data}
+\caption[Data]{Data}
+\label{fig:data}
+\end{figure}
+
+In figure \ref{fig:data} we show the data structure used by the cruncher to perform the queries. The intermediate files created are not shown in the figure. Since we use a different table for the people's birthdays and the interests table now has a reference to the person's one, we decided to drop the birthday, interest\_first and interest\_n fields from the Person data type to reduce even more the total size.
+
 
 \section{Cruncher}
 
+\section{Possible improvements}
+\begin{itemize}
+    \item To save the relationships between people we use a person table that contains all the people and a knows table that has the offsets to the person table. Another way to obtain the same result would be to use a unified table of couples with two person\_id for each entry. This would improve the sequential access to the data (the id of two person who are friend are always close to each other) 
+    \item Instead of using a secondary file to index the birthdays we could have ordered the people in the data structures to reduce the memory usage;
+    \item For each query, we load the \texttt{artists} and \texttt{likedBy} files to calculate the scores for the query in questions. We could calculate the scores for all the queries (or for a bunch of them) at a time and store them in an array (the number of queries should be small enough to avoid occupying too much memory with this array) so that we wouldn't need to access those files frequently;
+    \item An alternative to the a\texttt{artists} and \texttt{likedBy} files we use would be to create a bit array of size \texttt{number\_of\_person * number\_of\_interests} where each bit set to 1 if a person likes an artist. In a scenario where the amount of 1s is around half of the total (each person on average likes half of the artists) this would be a good way to compact the data. In this case we found that each person likes only a few of the artists available, so implementing the bit array would have led to a structure filled with mostly 0s. 
+\end{itemize}
 
 
 
